@@ -1,5 +1,4 @@
 @echo off
-
 echo.
 call :draw "*" 40
 echo.
