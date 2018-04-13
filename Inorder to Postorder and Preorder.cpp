@@ -9,7 +9,7 @@ using namespace std;
 
 	Pre: +++3*57*+1234
 	Post: 357*+12+3*+4+
-  O(N) complexity
+	O(N) complexity
 */
 
 string preorder(string inorder);
