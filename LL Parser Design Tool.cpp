@@ -56,7 +56,7 @@ bool is_terminal(char x) { return terminal.count(x); }
 bool is_variable(char x) { return variable.count(x); }
 void add_variable(char v) { variable[v] = Variable(v); }
 bool contains(vector<char>& arr, char c);
-void transform_from_left_recursion(int i);
+void transform_from_left_recursion(char var);
 char new_variable();
 set<char>& first_set(char x);
 set<char>& constuct_first_set(char var, set<char>& constucted);
@@ -91,7 +91,7 @@ int main()
 				cout << "left recursion detected.\ntransforming to right recursion...\n";
 			}
 			is_left_recursion = true;
-			transform_from_left_recursion(i);
+			transform_from_left_recursion(grammar[i].lefthand);
 		}
 	}
 	if (is_left_recursion) { // print out new grammar
@@ -154,7 +154,9 @@ int main()
 		cout << "\n";
 	}
 
-	// not yet verify first & follow set
+	// TODO: this code is not yet complete!
+	// TODO: result of first & follow set not verified
+
 
 	return 0;
 }
@@ -217,29 +219,33 @@ bool contains(vector<char>& arr, char c) {
 	return false;
 }
 
-void transform_from_left_recursion(int idx) {
-/*	S -> S...
-	S -> A... (assume the remaindings don't contain S)
-	S -> B...
+void transform_from_left_recursion(char var) {
+/*	S -> S A1 | S A2 | ...
+	S -> B1   | B2   | ... (assume A, B don't contain S)
 
-	S -> A...S'
-	S -> B...S'
-	S'-> ...S'
-	S'-> null */
-	char s = grammar[idx].lefthand;
-	char s2 = new_variable();
-	grammar[idx].lefthand = s2;
-	grammar[idx].righthand.erase(grammar[idx].righthand.begin());
-	grammar[idx].righthand.push_back(s2);
-	grammar.emplace_back(s2, "-");
-	for (j = 0; j < grammar.size(); j++) {
-		if (grammar[j].lefthand == s) grammar[j].righthand.push_back(s2);
+	S -> B1 S' | B2 S' | ...
+	S'-> A1 S' | A2 S' | ... | null  */
+	char var2 = new_variable();
+	for (i = 0; i < grammar.size(); i++) {
+		if (grammar[i].lefthand == var) {
+			if (grammar[i].righthand[0] == var) { // the As
+				grammar[i].lefthand = var2;
+				grammar[i].righthand.erase(grammar[i].righthand.begin());
+				grammar[i].righthand.push_back(var2);
+			} else { // the Bs
+				grammar[i].righthand.push_back(var2);
+			}
+		}
 	}
+	grammar.emplace_back(var2, "-");
 }
 
 char new_variable() {
 	for (char c = 'A'; c <= 'Z'; c++) {
-		if (!is_variable(c)) return c;
+		if (!is_variable(c)) {
+			add_variable(c);
+			return c;
+		}
 	}
 	cerr << "error: out of variable character set\n";
 	exit(1);
