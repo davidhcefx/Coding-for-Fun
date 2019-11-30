@@ -12,6 +12,6 @@
 
 ## Screenshot:
 
-<img src="scnshot.png" alt="Screenshot" width="600"/>
+<img src="scnsht.png" alt="Screenshot" width="600"/>
 
 *Ascii work created by davidhcefx.*
