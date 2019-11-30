@@ -2,7 +2,7 @@
 
 ## Usage:
 
-`countdown.exe (minutes) (seconds) - The default value is 30 minutes.`
+`countdown.exe (minutes (seconds)) - The default value is 30 minutes.`
 
 ## Screenshot:
 
