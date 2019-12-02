@@ -1,52 +1,86 @@
 #include <iostream>
 #include <cstdio>
+#include <ctime>
 #include <sstream>
-#include <chrono>
 #include <windows.h>
 using namespace std;
+#define APPROX_1SEC 700
 
 // Countdown timer on Windows. Written by davidhcefx, 2019.11.30.
 
-int toint(char* str) {
+struct Time {
+	int min;
+	int sec;
+};
+
+inline int toint(char* str) {
 	stringstream ss(str);
 	int x;
 	ss >> x;
 	return x;
 }
 
-void decrease(int& min, int& sec) {
-	if (sec == 0) {
-		min -= 1;
-		sec = 59;
-	} else {
-		sec -= 1;
-	}
+inline void to2int(char* str, int& a, int& b) {
+	stringstream ss(str);
+	ss >> a >> b;
+}
+
+inline int bound59(int n) {
+	return max(min(n, 59), 0);
+}
+
+void now(int& min, int& sec) {
+	time_t t = time(NULL);
+	char buf[6];
+	strftime(buf, sizeof(buf), "%M %S", localtime(&t));
+	to2int(buf, min, sec);
 }
 
 int main(int argc, char* argv[])
 {
-	int min = 30;
-	int sec = 0;
+	Time target, remain;
+	int min, sec;
 
+	remain.min = 30;  // default values
+	remain.sec = 0;
 	if (argc >= 2) {
-		min = toint(argv[1]);
+		remain.min = bound59(toint(argv[1]));
 		if (argc >= 3) {
-			sec = toint(argv[2]);
+			remain.sec = bound59(toint(argv[2]));
 		}
 	}
+	now(min, sec);
+	target.min = min + remain.min;
+	target.sec = sec + remain.sec;
+	// deals with overflow
+	if (target.sec >= 60) {
+		target.sec -= 60;
+		target.min++;
+	}
+	if (target.min >= 60) {
+		target.min -= 60; // make it appear "ealier" than current time
+	}
 
-	while (min >= 0) {
-		auto start = chrono::high_resolution_clock::now();
+	while (remain.min >= 0) {
 		system("cls");
 		printf("+------------------------------------------------------------+\n");
 		printf("|+----                                                  ----+|\n");
-		printf("||>>>>>             TIME REMAINS:      %02d:%02d           <<<<<||\n", min, sec);
+		printf("||>>>>>             TIME REMAINS:      %02d:%02d           <<<<<||\n", remain.min, remain.sec);
 		printf("|+----                                                  ----+|\n");
 		printf("+------------------------------------------------------------+\n");
-		decrease(min, sec);
-		// time spent in milliseconds
-		chrono::duration<double> diff = chrono::high_resolution_clock::now() - start;
-		Sleep((int)(1000 - diff.count()));
+		Sleep( APPROX_1SEC );
+		// re-compute remaining time
+		now(min, sec);
+		remain.min = target.min - min;
+		remain.sec = target.sec - sec;
+		// deals with underflow
+		if (remain.sec < 0) {
+			remain.sec += 60;
+			remain.min--;
+		}
+		if (remain.min < 0) {
+			remain.min += 60;
+		}
 	}
     printf("\n\n");
     printf("_______                   ______  /  ______                  _____     \n");
