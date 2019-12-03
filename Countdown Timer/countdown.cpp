@@ -40,6 +40,7 @@ int main(int argc, char* argv[])
 {
 	Time target, remain;
 	int min, sec;
+	bool lastmin = false;
 
 	remain.min = 30;  // default values
 	remain.sec = 0;
@@ -61,7 +62,7 @@ int main(int argc, char* argv[])
 		target.min -= 60; // make it appear "ealier" than current time
 	}
 
-	while (remain.min >= 0) {
+	while (true) {
 		system("cls");
 		printf("+------------------------------------------------------------+\n");
 		printf("|+----                                                  ----+|\n");
@@ -80,6 +81,9 @@ int main(int argc, char* argv[])
 		}
 		if (remain.min < 0) {
 			remain.min += 60;
+		}
+		if (min == target.min && sec > target.sec) {
+			break;
 		}
 	}
     printf("\n\n");
