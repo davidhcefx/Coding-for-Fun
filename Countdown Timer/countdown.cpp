@@ -82,12 +82,16 @@ int main(int argc, char* argv[])
 		if (remain.min < 0) {
 			remain.min += 60;
 		}
-		if (min == target.min && sec > target.sec) {
+		// termination check
+		if (min == target.min && !lastmin) {
+			lastmin = true;
+		}
+		if (lastmin && (min != target.min || sec > target.sec)) {
 			break;
 		}
 	}
-    printf("\n\n");
-    printf("_______                   ______  /  ______                  _____     \n");
+	printf("\n\n");
+	printf("_______                   ______  /  ______                  _____     \n");
 	printf("   |     |    |\\    /|   |          |             |     |   |     |    |\n");
 	printf("   |     |    | \\__/ |   |______    |______       |     |   |_____|    |\n");
 	printf("   |     |    |      |   |                |       |     |   |          |\n");
