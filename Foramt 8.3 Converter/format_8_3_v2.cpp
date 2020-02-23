@@ -8,7 +8,7 @@ string format_8_3(const string& addr);
 int main()
 {
 	cout << format_8_3("C:\\Program Files\\Windows Defender") << "\n";
-	// example output: "C:\\Program Files\\WINDOW~1"
+	// example output: "C:\\PROGRA~1\\WINDOW~1"
 	return 0;
 }
 
