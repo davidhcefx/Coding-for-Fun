@@ -3,9 +3,8 @@
 #include <cstdlib>
 using namespace std;
 
-
 // #include <fstream>, <cstdlib>
-// Transform a path to Format 8.3 (not including the basedir).
+// Convert a path to Format 8.3 (not including the basedir).
 string format_8_3(const string& addr);
 
 int main()
@@ -16,6 +15,10 @@ int main()
 }
 
 string format_8_3(const string& addr){
+	/*
+		Format 8.3 Converter by davidhcefx, 2016.12.02.
+		Please #include <fstream> and <cstdlib>
+	*/
 	if (addr[1] != ':' || addr[2] != '\\'){
 		cerr << "Error: please provide absolute file path\n";
 		return "";
