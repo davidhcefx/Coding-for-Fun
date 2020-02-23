@@ -4,7 +4,7 @@
 using namespace std;
 
 // #include <fstream>, <cstdlib>
-// Convert a path to Format 8.3 (not including the basedir).
+// Convert a path to Format 8.3 (not including the basedir part).
 string format_8_3(const string& addr);
 
 int main()
