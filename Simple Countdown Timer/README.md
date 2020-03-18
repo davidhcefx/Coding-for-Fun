@@ -1,4 +1,4 @@
-# Countdown Timer
+# Simple Countdown Timer
 
 ## Usage:
 
