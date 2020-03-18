@@ -2,7 +2,8 @@
 #include <random>
 using namespace std;
 
-// My self-written Cpp hash function implementation using mt19937.
+// My self-written Cpp hash function implementation using mt19937 random number generator.
+// I think it is cryptographic strong, could you disprove it?
 // Written by davidhcefx, 2019.9.11
 
 // Hash digest has length of 256-bit
@@ -13,7 +14,7 @@ string myhash(int key) {
     mt19937 mt(seed);
     mt.discard(43);
     string str;
-    // Generate each UINTSIZE bytes individually
+    // Generate each UINTSIZE-bit individually
     for (int i = 0; i < N; i++) {
         unsigned int rnd = mt();
         for (int j = 0; j < UINTSIZE * 2; j++, rnd >>= 4) {
