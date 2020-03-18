@@ -14,7 +14,7 @@ string myhash(int key) {
     mt19937 mt(seed);
     mt.discard(43);
     string str;
-    // Generate each UINTSIZE-bit individually
+    // Generate each UINTSIZE bytes individually
     for (int i = 0; i < N; i++) {
         unsigned int rnd = mt();
         for (int j = 0; j < UINTSIZE * 2; j++, rnd >>= 4) {
