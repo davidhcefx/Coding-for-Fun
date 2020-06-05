@@ -14,6 +14,6 @@ python3 random_password_generator.py
 - `Y?otqi3h8$DA9M-&=TWb`
 - `ixjF~_!$Vu*qE&49io#*`
 - `#B*dzjcDv$ezzD!mcR?U`
-- `uHA74d20eGtiezJ5wf5V`
-- `KUgOP8kA4d6bWdiHgCRA`
-- `oAHG7P8AGIOc34ID1N3h`
+- `bvV9NseA9naxA7YodQBF`
+- `kJDCoAU39Ueuebf5WMQw`
+- `xeWeq8o4sHd63qjTogx9`
