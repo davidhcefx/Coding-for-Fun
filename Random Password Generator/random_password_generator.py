@@ -1,4 +1,7 @@
 from os import urandom
+from random import shuffle
+
+# Written by davidhcefx, 2020.3.16.
 
 print('===============================================================================')
 print('||                     Offline Random Password Generator                     ||')
@@ -21,25 +24,30 @@ if choice == '':
 charset = []
 exclude_alnum = ''
 exclude_symbol = ''
-# exclude similar
+
+# Exclude similar
 if '4' in choice:
 	exclude_alnum = 'Il1O0'
-# exclude ambiguous
+
+# Exclude ambiguous
 if '5' in choice:
 	exclude_symbol = '{}[]()<>/\\\'\"`;:,.'
-# lower + upper
+
+# Lower + Upper
 if '1' in choice:
 	alpha = [chr(i) for i in range(ord('a'), ord('z') + 1)] \
 		+ [chr(i) for i in range(ord('A'), ord('Z') + 1)]
 	for a in alpha:
 		if a not in exclude_alnum:
 			charset.append(a)
-# digits
+
+# Digits
 if '2' in choice:
 	for i in range(ord('0'), ord('9') + 1):
 		if chr(i) not in exclude_alnum:
 			charset.append(chr(i))
-# symbols
+
+# Symbols
 if '3' in choice:
 	all_symbols = [chr(i) for i in range(0x21, 0x2f + 1)] \
 		+ [chr(i) for i in range(0x3a, 0x40 + 1)] \
@@ -50,6 +58,8 @@ if '3' in choice:
 			charset.append(s)
 
 print('charset:', ''.join(charset))
+shuffle(charset)  # mitigate the probability bias in [0,255] % len(charset)
+
 passwd = []
 for i in urandom(length):
 	passwd.append(charset[i % len(charset)])
