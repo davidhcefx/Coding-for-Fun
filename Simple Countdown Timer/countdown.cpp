@@ -59,7 +59,7 @@ int main(int argc, char* argv[])
         target.min++;
     }
     if (target.min >= 60) {
-        target.min -= 60; // make it appear "ealier" than current time
+        target.min -= 60;  // make it appear "ealier" than current time
     }
 
     while (true) {
@@ -83,10 +83,10 @@ int main(int argc, char* argv[])
             remain.min += 60;
         }
         // termination check
-        if (min == target.min && !lastmin) {
+        if (remain.min == 0) {
             lastmin = true;
         }
-        if (lastmin && (min != target.min || sec > target.sec)) {
+        if (lastmin && remain.min > 50) {
             break;
         }
     }
