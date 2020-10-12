@@ -40,7 +40,7 @@ int main(int argc, char* argv[])
 {
     Time target, remain;
     int min, sec;
-    bool lastmin = false;
+    bool lastmin;
 
     remain.min = 30;  // default values
     remain.sec = 0;
@@ -50,6 +50,8 @@ int main(int argc, char* argv[])
             remain.sec = bound59(toint(argv[2]));
         }
     }
+    lastmin = (remain.min == 0);
+
     now(min, sec);
     target.min = min + remain.min;
     target.sec = sec + remain.sec;
