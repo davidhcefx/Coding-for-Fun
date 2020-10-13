@@ -24,7 +24,7 @@ run_test() {
 	min=$1
 	sec=$2
 	export TIMEFORMAT=%0lR
-	echo -n "${min}m${sec}s  \t-->  \t"
+	echo -n -e "${min}m${sec}s  \t-->  \t"
 	bash -c "time $RUN $min $sec\">/dev/null"
 }
 
