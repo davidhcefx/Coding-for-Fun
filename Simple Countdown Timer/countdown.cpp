@@ -2,9 +2,7 @@
 #include <cstdio>
 #include <ctime>
 #include <sstream>
-#include <windows.h>
 using namespace std;
-#define APPROX_1SEC 700
 
 // Countdown timer on Windows. Written by davidhcefx, 2019.11.30.
 
@@ -13,48 +11,44 @@ struct Time {
     int sec;
 };
 
-inline int toint(char* str) {
+inline int to_int(const char* str) {
     stringstream ss(str);
     int x;
     ss >> x;
     return x;
 }
 
-inline void to2int(char* str, int& a, int& b) {
+inline void to_int(const char* str, int* a, int* b) {
     stringstream ss(str);
-    ss >> a >> b;
+    ss >> (*a) >> (*b);
 }
 
-inline int bound59(int n) {
+inline int bound_0_59(const int n) {
     return max(min(n, 59), 0);
 }
 
-void now(int& min, int& sec) {
+void get_time(struct Time* cur) {
     time_t t = time(NULL);
     char buf[6];
     strftime(buf, sizeof(buf), "%M %S", localtime(&t));
-    to2int(buf, min, sec);
+    to_int(buf, &cur->min, &cur->sec);
 }
 
-int main(int argc, char* argv[])
-{
-    Time target, remain;
-    int min, sec;
-    bool lastmin;
+int main(int argc, char* argv[]) {
+    struct Time target, remain{30, 0}, cur;  // defaults to 30 min 0 sec
+    bool is_last_min;
 
-    remain.min = 30;  // default values
-    remain.sec = 0;
     if (argc >= 2) {
-        remain.min = bound59(toint(argv[1]));
+        remain.min = bound_0_59(to_int(argv[1]));
         if (argc >= 3) {
-            remain.sec = bound59(toint(argv[2]));
+            remain.sec = bound_0_59(to_int(argv[2]));
         }
     }
-    lastmin = (remain.min == 0);
+    is_last_min = (remain.min == 0);
 
-    now(min, sec);
-    target.min = min + remain.min;
-    target.sec = sec + remain.sec;
+    get_time(&cur);
+    target.min = cur.min + remain.min;
+    target.sec = cur.sec + remain.sec;
     // deals with overflow
     if (target.sec >= 60) {
         target.sec -= 60;
@@ -71,27 +65,36 @@ int main(int argc, char* argv[])
         printf("||>>>>>             TIME REMAINS:      %02d:%02d           <<<<<||\n", remain.min, remain.sec);
         printf("|+----                                                  ----+|\n");
         printf("+------------------------------------------------------------+\n");
-        Sleep( APPROX_1SEC );
-        // re-compute remaining time
-        now(min, sec);
-        remain.min = target.min - min;
-        remain.sec = target.sec - sec;
-        // deals with underflow
+        system("timeout /t 2 >nul");
+
+        remain.sec -= 2;
         if (remain.sec < 0) {
             remain.sec += 60;
             remain.min--;
+
+            // recompute remain each minute
+            get_time(&cur);
+            remain.min = target.min - cur.min;
+            remain.sec = target.sec - cur.sec;
+            // deals with underflow
+            if (remain.sec < 0) {
+                remain.sec += 60;
+                remain.min--;
+            }
+            if (remain.min < 0) {
+                remain.min += 60;
+            }
         }
-        if (remain.min < 0) {
-            remain.min += 60;
-        }
+
         // termination check
-        if (remain.min == 0) {
-            lastmin = true;
+        if (cur.min == target.min && !is_last_min) {
+            is_last_min = true;
         }
-        if (lastmin && remain.min > 50) {
+        if (is_last_min && (cur.min != target.min || cur.sec > target.sec)) {
             break;
         }
     }
+
     printf("\n\n");
     printf("_______                   ______  /  ______                  _____     \n");
     printf("   |     |    |\\    /|   |          |             |     |   |     |    |\n");
@@ -114,8 +117,8 @@ int main(int argc, char* argv[])
 +------------------------------------------------------------+
 
 _______                   ______  /  ______                  _____
-   |     |    |\    /|   |          |             |     |   |     |    |
-   |     |    | \__/ |   |______    |______       |     |   |_____|    |
-   |     |    |      |   |                |       |     |   |          |
-   |     |    |      |   |______    ______|       |_____|   |          .
+    |     |    |\    /|   |          |             |     |   |     |    |
+    |     |    | \__/ |   |______    |______       |     |   |_____|    |
+    |     |    |      |   |                |       |     |   |          |
+    |     |    |      |   |______    ______|       |_____|   |          .
 */
