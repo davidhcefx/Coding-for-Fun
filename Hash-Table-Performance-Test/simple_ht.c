@@ -4,11 +4,11 @@
 #include <string.h>
 #include "list.h"
 
-typedef uint64_t (*hash_func)(uint8_t *data, size_t len);
+typedef uint64_t (*hash_cb)(uint8_t *data, size_t len);
 
 typedef struct {
     uint32_t size;  // power of 2
-    hash_func hash_fn;
+    hash_cb hash_fn;
     hlist_head_t *heads;
 } simple_ht_t;
 
@@ -29,7 +29,7 @@ static inline uint32_t __round_down_power_2(uint32_t v)
     return res;
 }
 
-simple_ht_t *simple_ht_create(uint32_t hash_size, hash_func fn)
+simple_ht_t *simple_ht_create(uint32_t hash_size, hash_cb fn)
 {
     hash_size = __round_down_power_2(hash_size);
     simple_ht_t *ht = malloc(sizeof(simple_ht_t) + sizeof(hlist_head_t)*hash_size);
@@ -118,6 +118,29 @@ void simple_ht_remove(simple_ht_t *ht, const void *key, size_t key_len)
             free(ent->value);
             free(ent);
             return;
+        }
+    }
+}
+
+void simple_ht_bucket_stats(simple_ht_t *ht, uint32_t *stats, uint32_t nb_stats)
+{
+    uint32_t i;
+    simple_ht_entry_t *ent;
+    uint32_t n = nb_stats - 2;
+
+    if (nb_stats < 2) {
+        return;
+    }
+    memset(stats, 0, nb_stats);
+    for (i = 0; i < ht->size; i++) {
+        uint32_t count = 0;
+        hlist_for_each_entry(ent, &ht->heads[i], node) {
+            count++;
+        }
+        if (count <= n) {
+            stats[count]++;
+        } else {
+            stats[nb_stats - 1]++;
         }
     }
 }

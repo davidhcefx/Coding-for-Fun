@@ -5,96 +5,121 @@
 #include <time.h>
 #include <unistd.h>
 #include <assert.h>
+#include "jhash.h"
 #include "simple_ht.h"
 
 #define HASH_TABLE_SIZE  4*1024*1024  // 4M
 #define SAMPLE_KEY       "someLongStringWithMeaninglessContent"
 #define INPUT_KEY_LEN    20  // should be shorter than SAMPLE_KEY, but larger than strlen(HASH_TABLE_SIZE)
-#define INPUT_NB_NOT_FOUND    1024  // among the inputs, how many should test the not-found case
-#define VERIFY_LOOKUP_RESULT  false
+#define INPUT_NB_NOT_FOUND        1024  // among the inputs, how many should test the not-found case
+#define DEBUG_CHECK_LOOKUP_VALUE  false
+#define DEBUG_COUNT_BKT_STATS     false
 
-void *g_input[HASH_TABLE_SIZE][2];
+char g_input_key[HASH_TABLE_SIZE][INPUT_KEY_LEN];
+char g_input_value[HASH_TABLE_SIZE][INPUT_KEY_LEN];
 
-static uint64_t __my_hash(uint8_t *data, size_t len)
+
+static uint64_t __hash_cb(uint8_t *data, size_t len)
 {
-    // TODO: this hash algo is not evenly distributed, which hurts performance
-    uint64_t res = 0;
-    while (len > 8) {
-        res += *(uint64_t *)data;
-        data += 8;
-        len -= 8;
-    }
-    while (len > 0) {
-        res += *data;
-        data++;
-        len--;
-    }
-    return res;
+    // uint64_t res = 0;
+    // while (len > 8) {
+    //     res += *(uint64_t *)data;
+    //     data += 8;
+    //     len -= 8;
+    // }
+    // while (len > 0) {
+    //     res += *data;
+    //     data++;
+    //     len--;
+    // }
+    // return res;
+
+    return jhash(data, len, 0);
 }
 
-static inline uint64_t gettime_ms() {
+static inline uint64_t gettime_ms()
+{
     struct timespec ts;
     // assert(clock_gettime(CLOCK_MONOTONIC_COARSE, &ts) == 0);
     assert(clock_gettime(CLOCK_MONOTONIC, &ts) == 0);
     return (ts.tv_sec * 1000) + (ts.tv_nsec / 1000000);
 }
 
-void test_simple_ht(void *input[HASH_TABLE_SIZE][2], float load_factor)
+void test_simple_ht(float load_factor)
 {
     simple_ht_t *ht;
+    int nb = (int)(load_factor * HASH_TABLE_SIZE);
+    void **keys, **values;
+    uint64_t start_ms, diff;
+    uint32_t stats[5] __attribute__((unused));
     void *val;
-    int nb = (int)(HASH_TABLE_SIZE * load_factor);
     int i;
-    uint64_t start_ms, insert_ms, lookup_ms;
+
+    // prepare input
+    assert(keys = (void **)malloc(nb * sizeof(void *)));
+    assert(values = (void **)malloc(nb * sizeof(void *)));
+    for (i = 0; i < nb; i++) {
+        assert(keys[i] = strdup(g_input_key[i]));
+        assert(values[i] = strdup(g_input_value[i]));
+    }
 
     printf("%s (load factor %.2f)\n", __func__, load_factor);
-    assert(ht = simple_ht_create(HASH_TABLE_SIZE, __my_hash));
+    assert(ht = simple_ht_create(HASH_TABLE_SIZE, __hash_cb));
 
+    // insert
     start_ms = gettime_ms();
     for (i = 0; i < nb; i++) {
-        assert(simple_ht_insert(ht, input[i][0], INPUT_KEY_LEN, input[i][1]));
+        assert(simple_ht_insert(ht, keys[i], INPUT_KEY_LEN, values[i]));
     }
-    insert_ms = gettime_ms() - start_ms;
-    printf("  insert: %lu ms, %lu ns/op\n", insert_ms, insert_ms * 1000 / nb);
+    diff = gettime_ms() - start_ms;
+    printf("  insert: %lu ms, %lu ns/op\n", diff, diff * 1000 / nb);
 
+    // lookup
     start_ms = gettime_ms();
     for (i = 0; i < nb - INPUT_NB_NOT_FOUND; i++) {
-        assert(simple_ht_lookup(ht, input[i][0], INPUT_KEY_LEN, &val));
-#if VERIFY_LOOKUP_RESULT
-        assert(val && strcmp((char *)input[i][1], (char *)val) == 0);
+        assert(simple_ht_lookup(ht, keys[i], INPUT_KEY_LEN, &val));
+#if DEBUG_CHECK_LOOKUP_VALUE
+        assert(val && strcmp((char *)values[i], (char *)val) == 0);
 #endif
     }
     for (i = nb - INPUT_NB_NOT_FOUND; i < nb; i++) {
-        assert(!simple_ht_lookup(ht, input[i][0], INPUT_KEY_LEN - 2, &val));
+        assert(!simple_ht_lookup(ht, keys[i], INPUT_KEY_LEN - 2, &val));
     }
-    lookup_ms = gettime_ms() - start_ms;
-    printf("  lookup: %lu ms, %lu ns/op (%d found, %d not found)\n", lookup_ms, lookup_ms * 1000 / nb,
+    diff = gettime_ms() - start_ms;
+    printf("  lookup: %lu ms, %lu ns/op (%d found, %d not found)\n", diff, diff * 1000 / nb,
             nb - INPUT_NB_NOT_FOUND, INPUT_NB_NOT_FOUND);
 
+#if DEBUG_COUNT_BKT_STATS
+    printf("  bucket stats: ");
+    simple_ht_bucket_stats(ht, stats, sizeof(stats)/sizeof(uint32_t));
+    for (i = 0; i < (int)(sizeof(stats)/sizeof(uint32_t)); i++) {
+        printf("%u, ", stats[i]);
+    }
+    printf("\n");
+#endif
     simple_ht_destroy(ht);
+    free(keys);
+    free(values);
 }
 
 int main()
 {
-    int i;
-    char *key;
     char buf[32];
+    int i;
 
     assert(snprintf(buf, sizeof(buf), "%d", HASH_TABLE_SIZE) <= INPUT_KEY_LEN);
     assert(INPUT_KEY_LEN < strlen(SAMPLE_KEY));
 
     // prepare input
     for (i = 0; i < HASH_TABLE_SIZE; i++) {
-        assert(key = (char *)malloc(INPUT_KEY_LEN));
-        snprintf(key, INPUT_KEY_LEN, "%d%s", i, SAMPLE_KEY);
-        g_input[i][0] = key;
-        g_input[i][1] = strdup(key);
+        snprintf(g_input_key[i], INPUT_KEY_LEN, "%d%s", i, SAMPLE_KEY);
+        snprintf(g_input_value[i], INPUT_KEY_LEN, "%d-v", i);
     }
 
-    test_simple_ht(g_input, 0.25);
-    test_simple_ht(g_input, 0.50);
-    test_simple_ht(g_input, 0.75);
-    test_simple_ht(g_input, 0.90);
+    test_simple_ht(0.25);
+    test_simple_ht(0.50);
+    test_simple_ht(0.75);
+    // test_simple_ht(g_input, 0.90);
 
     return 0;
 }
