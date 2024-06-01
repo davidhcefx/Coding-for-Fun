@@ -8,16 +8,17 @@
 #include "jhash.h"
 #include "simple_ht.h"
 
-#define HASH_TABLE_SIZE  4*1024*1024  // 4M
-#define SAMPLE_KEY       "someLongStringWithMeaninglessContent"
-#define INPUT_KEY_LEN    20  // should be shorter than SAMPLE_KEY, but larger than strlen(HASH_TABLE_SIZE)
-#define INPUT_NB_NOT_FOUND        1024  // among the inputs, how many should test the not-found case
+#define HASH_TABLE_SIZE           4*1024*1024  // 4M
+#define INPUT_MAX_LOAD_FACTOR     2.0
+#define INPUT_KEY_LEN             20  // should be longer than str(HASH_TABLE_SIZE*INPUT_MAX_LOAD_FACTOR)
+#define SAMPLE_KEY                "someLongStringWithMeaninglessContent"
+#define INPUT_MAX_NB              (size_t)((HASH_TABLE_SIZE)*(INPUT_MAX_LOAD_FACTOR))
+#define INPUT_NB_NOT_FOUND        1024LU  // among the inputs, how many should test the not-found case
 #define DEBUG_CHECK_LOOKUP_VALUE  false
 #define DEBUG_COUNT_BKT_STATS     false
 
-char g_input_key[HASH_TABLE_SIZE][INPUT_KEY_LEN];
-char g_input_value[HASH_TABLE_SIZE][INPUT_KEY_LEN];
-
+char g_input_key[INPUT_MAX_NB][INPUT_KEY_LEN];
+char g_input_value[INPUT_MAX_NB][INPUT_KEY_LEN];
 
 static uint64_t __hash_cb(uint8_t *data, size_t len)
 {
@@ -48,12 +49,12 @@ static inline uint64_t gettime_ms()
 void test_simple_ht(float load_factor)
 {
     simple_ht_t *ht;
-    int nb = (int)(load_factor * HASH_TABLE_SIZE);
+    size_t nb = (size_t)(load_factor * HASH_TABLE_SIZE);
     void **keys, **values;
     uint64_t start_ms, diff;
     uint32_t stats[5] __attribute__((unused));
     void *val;
-    int i;
+    size_t i, k;
 
     // prepare input
     assert(keys = (void **)malloc(nb * sizeof(void *)));
@@ -72,27 +73,28 @@ void test_simple_ht(float load_factor)
         assert(simple_ht_insert(ht, keys[i], INPUT_KEY_LEN, values[i]));
     }
     diff = gettime_ms() - start_ms;
-    printf("  insert: %lu ms, %lu ns/op\n", diff, diff * 1000 / nb);
+    printf("  insert: %lu ms, %lu ns/op\n", diff, diff * 1000000 / nb);
 
     // lookup
     start_ms = gettime_ms();
-    for (i = 0; i < nb - INPUT_NB_NOT_FOUND; i++) {
-        assert(simple_ht_lookup(ht, keys[i], INPUT_KEY_LEN, &val));
+    for (k = 0; k < 5; k++) {  // repeat 5 times
+        for (i = 0; i < nb - INPUT_NB_NOT_FOUND; i++) {
+            assert(simple_ht_lookup(ht, keys[i], INPUT_KEY_LEN, &val));
 #if DEBUG_CHECK_LOOKUP_VALUE
-        assert(val && strcmp((char *)values[i], (char *)val) == 0);
+            assert(val && strcmp((char *)values[i], (char *)val) == 0);
 #endif
-    }
-    for (i = nb - INPUT_NB_NOT_FOUND; i < nb; i++) {
-        assert(!simple_ht_lookup(ht, keys[i], INPUT_KEY_LEN - 2, &val));
+        }
+        for (i = nb - INPUT_NB_NOT_FOUND; i < nb; i++) {
+            assert(!simple_ht_lookup(ht, keys[i], INPUT_KEY_LEN - 2, &val));
+        }
     }
     diff = gettime_ms() - start_ms;
-    printf("  lookup: %lu ms, %lu ns/op (%d found, %d not found)\n", diff, diff * 1000 / nb,
-            nb - INPUT_NB_NOT_FOUND, INPUT_NB_NOT_FOUND);
+    printf("  lookup: %lu ms, %lu ns/op\n", diff, diff * 1000000 / nb);
 
 #if DEBUG_COUNT_BKT_STATS
     printf("  bucket stats: ");
     simple_ht_bucket_stats(ht, stats, sizeof(stats)/sizeof(uint32_t));
-    for (i = 0; i < (int)(sizeof(stats)/sizeof(uint32_t)); i++) {
+    for (i = 0; i < sizeof(stats)/sizeof(uint32_t); i++) {
         printf("%u, ", stats[i]);
     }
     printf("\n");
@@ -105,21 +107,22 @@ void test_simple_ht(float load_factor)
 int main()
 {
     char buf[32];
-    int i;
+    size_t i;
 
-    assert(snprintf(buf, sizeof(buf), "%d", HASH_TABLE_SIZE) <= INPUT_KEY_LEN);
-    assert(INPUT_KEY_LEN < strlen(SAMPLE_KEY));
+    snprintf(buf, sizeof(buf), "%lu", INPUT_MAX_NB);
+    assert(INPUT_KEY_LEN >= strlen(buf));
 
     // prepare input
-    for (i = 0; i < HASH_TABLE_SIZE; i++) {
-        snprintf(g_input_key[i], INPUT_KEY_LEN, "%d%s", i, SAMPLE_KEY);
-        snprintf(g_input_value[i], INPUT_KEY_LEN, "%d-v", i);
+    for (i = 0; i < INPUT_MAX_NB; i++) {
+        snprintf(g_input_key[i], INPUT_KEY_LEN, "%lu%s", i, SAMPLE_KEY);
+        snprintf(g_input_value[i], INPUT_KEY_LEN, "%lu-v", i);
     }
 
     test_simple_ht(0.25);
     test_simple_ht(0.50);
     test_simple_ht(0.75);
-    // test_simple_ht(g_input, 0.90);
+    test_simple_ht(1.00);
+    test_simple_ht(2.00);
 
     return 0;
 }
