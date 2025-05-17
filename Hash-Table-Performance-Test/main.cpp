@@ -10,11 +10,10 @@
 
 #define HASH_TABLE_SIZE           4*1024*1024  // 4M
 #define INPUT_MAX_LOAD_FACTOR     2.0
-#define INPUT_KEY_LEN             20  // should be longer than str(HASH_TABLE_SIZE*INPUT_MAX_LOAD_FACTOR)
-#define SAMPLE_KEY                "someLongStringWithMeaninglessContent"
+#define INPUT_KEY_LEN             20  // string length, should not be too short
 #define INPUT_MAX_NB              (size_t)((HASH_TABLE_SIZE)*(INPUT_MAX_LOAD_FACTOR))
-#define INPUT_NB_NOT_FOUND        1024LU  // among the inputs, how many should test the not-found case
-#define DEBUG_CHECK_LOOKUP_VALUE  false
+#define TEST_TRIALS               10  // number of trials
+#define CHECK_LOOKUP_VALUE        false   // validate the lookup result
 #define DEBUG_COUNT_BKT_STATS     false
 
 char g_input_key[INPUT_MAX_NB][INPUT_KEY_LEN];
@@ -75,21 +74,28 @@ void test_simple_ht(float load_factor)
     diff = gettime_ms() - start_ms;
     printf("  insert: %lu ms, %lu ns/op\n", diff, diff * 1000000 / nb);
 
-    // lookup
+    // lookup found
     start_ms = gettime_ms();
-    for (k = 0; k < 5; k++) {  // repeat 5 times
-        for (i = 0; i < nb - INPUT_NB_NOT_FOUND; i++) {
+    for (k = 0; k < TEST_TRIALS; k++) {
+        for (i = 0; i < nb; i++) {
             assert(simple_ht_lookup(ht, keys[i], INPUT_KEY_LEN, &val));
-#if DEBUG_CHECK_LOOKUP_VALUE
+#if CHECK_LOOKUP_VALUE
             assert(val && strcmp((char *)values[i], (char *)val) == 0);
 #endif
         }
-        for (i = nb - INPUT_NB_NOT_FOUND; i < nb; i++) {
+    }
+    diff = gettime_ms() - start_ms;
+    printf("  lookup (hit): %lu ms, %lu ns/op\n", diff, diff * 1000000 / nb / TEST_TRIALS);
+
+    // lookup not found
+    start_ms = gettime_ms();
+    for (k = 0; k < TEST_TRIALS; k++) {
+        for (i = 0; i < nb; i++) {
             assert(!simple_ht_lookup(ht, keys[i], INPUT_KEY_LEN - 2, &val));
         }
     }
     diff = gettime_ms() - start_ms;
-    printf("  lookup: %lu ms, %lu ns/op\n", diff, diff * 1000000 / nb);
+    printf("  lookup (miss): %lu ms, %lu ns/op\n", diff, diff * 1000000 / nb / TEST_TRIALS);
 
 #if DEBUG_COUNT_BKT_STATS
     printf("  bucket stats: ");
@@ -106,16 +112,18 @@ void test_simple_ht(float load_factor)
 
 int main()
 {
+    const char *sample_key = "someLongStringWithMeaninglessContent";
     char buf[32];
     size_t i;
 
+    // INPUT_KEY_LEN should not be too short, or the keys might collide according to how we generate them
     snprintf(buf, sizeof(buf), "%lu", INPUT_MAX_NB);
     assert(INPUT_KEY_LEN >= strlen(buf));
 
     // prepare input
     for (i = 0; i < INPUT_MAX_NB; i++) {
-        snprintf(g_input_key[i], INPUT_KEY_LEN, "%lu%s", i, SAMPLE_KEY);
-        snprintf(g_input_value[i], INPUT_KEY_LEN, "%lu-v", i);
+        snprintf(g_input_key[i], INPUT_KEY_LEN, "%lu:%s", i, sample_key);
+        snprintf(g_input_value[i], INPUT_KEY_LEN, "%lu:v", i);
     }
 
     test_simple_ht(0.25);
